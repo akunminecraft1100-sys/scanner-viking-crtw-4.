@@ -1,1 +1,108 @@
 
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scanner Tiket Viking CRTW</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: white;
+      text-align: center;
+      padding: 16px;
+    }
+    h1 { color: #f5c400; }
+    #reader {
+      width: 100%;
+      max-width: 420px;
+      margin: 20px auto;
+      background: white;
+      color: black;
+    }
+    button {
+      padding: 12px 18px;
+      margin: 6px;
+      border: 0;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+    #hasil {
+      white-space: pre-line;
+      overflow-wrap: anywhere;
+      padding: 18px;
+      border-radius: 10px;
+      background: #333;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>VIKING CRTW</h1>
+  <p>SCAN TIKET ANNIVERSARY</p>
+
+  <button onclick="mulaiScan()">MULAI SCAN</button>
+  <button onclick="stopScan()">STOP</button>
+
+  <div id="reader"></div>
+  <div id="hasil">Kamera belum aktif</div>
+
+  <script>
+    let scanner = null;
+    let sibuk = false;
+
+    function hasil(teks, warna = "#333") {
+      const el = document.getElementById("hasil");
+      el.textContent = teks;
+      el.style.background = warna;
+    }
+
+    async function mulaiScan() {
+      if (scanner) return;
+
+      if (!window.isSecureContext || !navigator.mediaDevices ||
+          !navigator.mediaDevices.getUserMedia) {
+        hasil("Browser tidak mendukung akses kamera. Buka halaman melalui HTTPS di Chrome.", "#a32020");
+        return;
+      }
+
+      try {
+        scanner = new Html5Qrcode("reader");
+        hasil("Meminta akses kamera...", "#555");
+
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          async function(kode) {
+            if (sibuk) return;
+            sibuk = true;
+            hasil("QR TERBACA:\n" + kode, "#146b32");
+            await stopScan();
+          }
+        );
+
+        hasil("Kamera aktif. Arahkan ke QR tiket.", "#333");
+      } catch (err) {
+        scanner = null;
+        hasil("Kamera gagal dibuka: " + err +
+          "\nPastikan izin kamera di Chrome aktif.", "#a32020");
+      }
+    }
+
+    async function stopScan() {
+      if (scanner) {
+        const aktif = scanner;
+        scanner = null;
+        try {
+          await aktif.stop();
+          aktif.clear();
+        } catch (err) {}
+      }
+      sibuk = false;
+    }
+  </script>
+</body>
+</html>
+
